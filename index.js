@@ -85,6 +85,9 @@ app.post('/medicao', async (req, res) => {
     if (!tipo || !unidade_original || valor_original == undefined || !descricao) {
         return res.status(400).json({ mensagem: "Verifique se todos os campos estão preenchidos" });
     }
+    if (isNaN(Number(valor_original))) {
+        return res.status(400).json({ mensagem: "o valor original deve ser um numero!" });
+    }
     const tipoM = tipo.toLowerCase();
     let convertido;
 
@@ -97,6 +100,8 @@ app.post('/medicao', async (req, res) => {
     } else {
         return res.status(400).json({ mensagem: "O tipo é incopativel" });
     }
+
+
     const { valor_convertido, classificacao, unidade_convertida } = convertido
 
     try {
@@ -113,8 +118,10 @@ app.post('/medicao', async (req, res) => {
             unidade_original,
             valor_convertido,
             unidade_convertida,
-            classificacao
+            classificacao,
+            mensagem: "Dados Guardados no banco!"
         });
+        
     } catch (error) {
         res.status(500).json({ mensagem: "Erro interno do servidor", detalhes: error.message });
     }
@@ -126,7 +133,7 @@ app.get('/medicao/altavelocidade', async (req, res) => {
     } catch (error) {
         res.status(500).json({ mensagem: "Erro interno do servidor", detalhes: error.message });
     }
-})
+});
 app.put('/medicao/put/:id', async (req, res) => {
     const { tipo, unidade_original, descricao, valor_original, } = req.body;
     const { id } = req.params;
@@ -159,13 +166,13 @@ app.put('/medicao/put/:id', async (req, res) => {
             WHERE id = ?
         `;
         await db.execute(query, [
-            tipo, 
-            unidade_original, 
-            valor_original, 
-            descricao, 
-            valor_convertido, 
-            classificacao, 
-            unidade_convertida, 
+            tipo,
+            unidade_original,
+            valor_original,
+            descricao,
+            valor_convertido,
+            classificacao,
+            unidade_convertida,
             id
         ]);
         res.status(200).json({
@@ -182,17 +189,28 @@ app.put('/medicao/put/:id', async (req, res) => {
         res.status(500).json({ mensagem: "Erro interno do servidor", detalhes: error.message });
     }
 });
-app.delete('/paciente/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [result] = await db.execute('DELETE FROM medicoes WHERE id = ?', [id]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ mensagem: "Paciente não encontrado" });
+app.delete('/medicao/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [result] = await db.execute('DELETE FROM medicoes WHERE id = ?', [id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ mensagem: "Paciente não encontrado" });
+        }
+        res.status(200).json({ mensagem: "Paciente apagado com sucesso" });
+    } catch (error) {
+        res.status(500).json({ mensagem: "Erro interno do servidor", detalhes: error.message });
     }
-    res.status(200).json({ mensagem: "Paciente apagado com sucesso" });
-  } catch (error) {
-    res.status(500).json({ mensagem: "Erro interno do servidor", detalhes: error.message });
-  }
+});
+app.delete('/medicao', async (req,res) =>{
+    try {
+        const [result] = await db.execute('DELETE FROM medicoes');
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ mensagem: "Não tem nenhum usuario para ser deletado" });
+        }
+        res.status(200).json({ mensagem: "todos os dados foram apagados com sucesso" });
+    } catch (error) {
+        res.status(500).json({ mensagem: "Erro interno do servidor", detalhes: error.message });
+    }
 });
 app.listen(port, () => {
     console.log(`Servidor rodando com sucesso em http://localhost:${port}`);
